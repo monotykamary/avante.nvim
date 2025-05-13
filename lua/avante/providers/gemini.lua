@@ -82,16 +82,21 @@ function M:parse_messages(opts)
             },
           })
         elseif type(item) == "table" and item.type == "tool_result" then
-          role = "function"
-          local ok, content = pcall(vim.json.decode, item.content)
-          if not ok then content = item.content end
+          role = "function" -- Keep this as it was, implies the part itself is a function response part
+          
+          local tool_output_content = item.content
+          local response_payload = {}
+
+          if item.is_error then
+            response_payload = { error = tool_output_content }
+          else
+            response_payload = { content = tool_output_content }
+          end
+          
           table.insert(parts, {
             functionResponse = {
-              name = tool_id_to_name[item.tool_use_id],
-              response = {
-                name = tool_id_to_name[item.tool_use_id],
-                content = content,
-              },
+              name = tool_id_to_name[item.tool_use_id], -- Name of the function that was called
+              response = response_payload, -- Corrected payload
             },
           })
         elseif type(item) == "table" and item.type == "thinking" then
